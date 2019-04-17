@@ -41,7 +41,7 @@ def printResult(result):
 
 
 
-def firstFit():
+def nextFit():
     containers, container, actualWeight = [], [], 0
     for item in instance:
         if actualWeight + item <= capacity:
@@ -55,6 +55,25 @@ def firstFit():
     printResult(containers)
 
 
+def firstFitDecreasing():
+    containers = []
+    containers.append([])
+    sortedList = sorted(instance, reverse=True)
+
+    for item in sortedList:
+        packed = False
+        for container in containers:
+            if sum(container) + item <= capacity:
+                container.append(item)
+                packed = True
+                break
+        if not packed:
+            containers.append([item])
+
+    printResult(containers)
+
+
 n, capacity, instance = readData('N1C1W1_A')
 printInstance()
-firstFit()
+nextFit()
+firstFitDecreasing()
