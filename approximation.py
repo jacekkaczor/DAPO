@@ -1,5 +1,11 @@
+import math
+import time
+import os
+import csv
+import sys
+
 def readData(filename):
-    with open('data/bin1data/'+filename+'.BPP') as file:
+    with open(filename) as file:
         content = file.readlines()
     return int(content.pop(0)), int(content.pop(0)), [int(x) for x in content]
 
@@ -40,26 +46,25 @@ def printResult(result):
     print('---------------------------------------------------')
 
 
+def bound():
+    return math.ceil(sum(instance)/capacity)
+
 
 def nextFit():
-    containers, container, actualWeight = [], [], 0
+    containers, actualWeight = 0, 0
     for item in instance:
         if actualWeight + item <= capacity:
-            container.append(item)
             actualWeight += item
         else:
-            containers.append(container)
-            container = [item]
+            containers += 1
             actualWeight = item
-    containers.append(container)
-    printResult(containers)
+    containers += 1
+    return containers
 
 
 def firstFitDecreasing():
     containers = []
-    containers.append([])
     sortedList = sorted(instance, reverse=True)
-
     for item in sortedList:
         packed = False
         for container in containers:
@@ -69,11 +74,52 @@ def firstFitDecreasing():
                 break
         if not packed:
             containers.append([item])
+    return len(containers)
 
-    printResult(containers)
+
+def round_to_n(x, n):
+    if not x: return 0
+    power = -int(math.floor(math.log10(abs(x)))) + (n - 1)
+    factor = (10 ** power)
+    return round(x * factor)/factor
 
 
-n, capacity, instance = readData('N1C1W1_A')
-printInstance()
-nextFit()
-firstFitDecreasing()
+def doTests(directory):
+    global n
+    global capacity
+    global instance
+    with open('results/'+directory.rpartition('/')[-1]+'_'+'results.csv', mode='w', newline='') as results_file:
+        fieldnames = ['File Name', 'No', 'N', 'C', 'Bound', 'NF', 'NFratio', 'tNF', 'FFD', 'FFDratio', 'tFFD']
+        writer = csv.DictWriter(results_file, fieldnames=fieldnames)
+        writer.writeheader()
+        index = 1
+        for filename in os.listdir(directory):
+            print(filename)
+            n, capacity, instance = readData(directory+'/'+filename)
+            start = time.perf_counter()
+            NF = nextFit()
+            t_NF = time.perf_counter() - start
+
+            start = time.perf_counter()
+            FFD = firstFitDecreasing()
+            t_FFD = time.perf_counter() - start
+            writer.writerow({'File Name': filename,
+                             'No': index,
+                             'N': n, 'C': capacity,
+                             'Bound': bound(),
+                             'NF': NF,
+                             'NFratio': '{0:.2f}'.format((NF-bound())/bound() * 100),
+                             'tNF': '{0:.10f}'.format(round_to_n(t_NF, 3)).rstrip("0"),
+                             'FFD': FFD,
+                             'FFDratio': '{0:.2f}'.format((FFD-bound())/bound() * 100),
+                             'tFFD': '{0:.10f}'.format(round_to_n(t_FFD, 3)).rstrip("0")
+                             })
+            index += 1
+
+
+generated = ['N100', 'N500', 'N1000', 'N5000', 'N10000', 'N20000']
+
+doTests('./data/bin3data')
+for n in generated:
+    doTests('./data/generated/' + n)
+
